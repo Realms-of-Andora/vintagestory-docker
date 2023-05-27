@@ -1,0 +1,29 @@
+ARG REPO=mcr.microsoft.com/dotnet/runtime-deps
+FROM --platform=linux/amd64 $REPO:7.0.5-alpine3.17-amd64
+
+# .NET Runtime version
+ARG DOTNET_VERSION="7.0.5"
+ENV DOTNET_VERSION=$DOTNET_VERSION
+
+# VS Gameserver version
+ARG VERSION="1.18.5"
+ENV VERSION=$VERSION
+
+# Install .NET Runtime
+RUN wget -O dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Runtime/$DOTNET_VERSION/dotnet-runtime-$DOTNET_VERSION-linux-musl-x64.tar.gz \
+    && dotnet_sha512='f853175cf9818d71f575762960319bf79d1a35bca7518de4594e8a9468ad8572328e2412eda091d989083b70001fc9b65d478314a58d67f0aa57a5da60e86fbd' \
+    && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
+    && mkdir -p /usr/share/dotnet \
+    && tar -oxzf dotnet.tar.gz -C /usr/share/dotnet \
+    && rm dotnet.tar.gz \
+    && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
+
+# Setup VS environment
+RUN mkdir /vintagestory \
+    && mkdir /vintagestory-data \
+    && apk add ca-certificates gcompat fontconfig
+COPY vs_server_linux-x64_1.18.5_net7_bleedingedge.tar.gz .
+RUN tar xf "vs_server_linux-x64_1.18.5_net7_bleedingedge.tar.gz" --directory /vintagestory
+
+WORKDIR /vintagestory
+CMD [ "dotnet", "VintagestoryServer.dll", "--dataPath", "/vintagestory-data" ]
