@@ -1,17 +1,16 @@
-FROM alpine:latest
-ARG VERSION="1.18.2-rc.1"
-ENV VERSION=$VERSION
+FROM mcr.microsoft.com/dotnet/runtime:7.0.14-bullseye-slim-amd64
 
-RUN mkdir /vintagestory \
- && apk --no-cache add ca-certificates wget \
- && wget "https://cdn.vintagestory.at/gamefiles/unstable/vs_server_${VERSION}.tar.gz" \
- && tar xf "vs_server_${VERSION}.tar.gz" --directory vintagestory
-ADD . /vintagestory
+# VS Gameserver version
+ARG VS_VERSION="1.19.0-rc.6"
+ENV VS_VERSION=$VS_VERSION
 
-FROM mono:latest
-RUN mkdir /vintagestory \
- && mkdir /vintagestory-files
+# Setup VS environment
+RUN mkdir /vintagestory 
+RUN mkdir /vintagestory-data 
+RUN apt update 
+RUN apt install -y ca-certificates wget libfontconfig1 libzstd1 
+RUN wget "https://cdn.vintagestory.at/gamefiles/unstable/vs_server_linux-x64_${VS_VERSION}.tar.gz" 
+RUN tar xvf "vs_server_linux-x64_${VS_VERSION}.tar.gz" --directory vintagestory 
+
 WORKDIR /vintagestory
-COPY --from=0 /vintagestory .
-RUN cert-sync /etc/ssl/certs/ca-certificates.crt
-CMD [ "mono",  "./VintagestoryServer.exe" ]
+CMD [ "dotnet", "VintagestoryServer.dll", "--dataPath", "/vintagestory-data" ]
